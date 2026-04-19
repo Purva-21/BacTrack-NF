@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BacTrack-NF — Clinical Bacterial WGS Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:        oklch(97.5% 0.007 230);
+  --bg2:       oklch(95%   0.009 225);
+  --bg3:       oklch(92%   0.012 220);
+  --text:      oklch(13%   0.015 250);
+  --text-mid:  oklch(38%   0.012 240);
+  --text-soft: oklch(58%   0.010 235);
+  --jade:      oklch(46%   0.17  168);
+  --jade-light:oklch(92%   0.06  168);
+  --jade-mid:  oklch(65%   0.12  168);
+  --amber:     oklch(62%   0.15  60);
+  --amber-light:oklch(95%  0.06  75);
+  --rule:      oklch(85%   0.008 230);
+  --code-bg:   oklch(14%   0.018 250);
+  --code-text: oklch(88%   0.012 200);
+  --radius:    6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.7;
+  background-image: radial-gradient(circle, oklch(75% 0.01 230 / 0.4) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: oklch(97.5% 0.007 230 / 0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+}
+.nav-logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px; font-weight: 500;
+  color: var(--jade);
+  letter-spacing: -0.02em;
+}
+.nav-logo span { color: var(--text); }
+.nav-links { display: flex; gap: 28px; list-style: none; }
+.nav-links a {
+  font-size: 13.5px; font-weight: 500; color: var(--text-mid);
+  text-decoration: none; letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--jade); }
+.nav-cta {
+  font-size: 13px; font-weight: 500;
+  background: var(--jade); color: white;
+  border: none; padding: 8px 18px; border-radius: var(--radius);
+  cursor: pointer; text-decoration: none;
+  transition: opacity 0.2s;
+}
+.nav-cta:hover { opacity: 0.85; }
+
+/* ── HERO ── */
+.hero {
+  max-width: 860px; margin: 0 auto;
+  padding: 96px 40px 72px;
+  text-align: center;
+}
+.hero-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  color: var(--jade); letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--jade-light); padding: 5px 14px; border-radius: 100px;
+  margin-bottom: 24px;
+}
+.hero-label::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--jade);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.8); }
+}
+h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(44px, 6vw, 72px);
+  line-height: 1.08; letter-spacing: -0.03em;
+  color: var(--text); margin-bottom: 8px;
+}
+h1 em { font-style: italic; color: var(--jade); }
+.hero-sub {
+  font-size: 18px; color: var(--text-mid); font-weight: 300;
+  max-width: 580px; margin: 18px auto 36px; line-height: 1.6;
+}
+.badge-row {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin-bottom: 36px;
+}
+.badge {
+  font-family: 'DM Mono', monospace; font-size: 11.5px;
+  padding: 4px 12px; border-radius: 4px; border: 1px solid var(--rule);
+  background: white; color: var(--text-mid);
+}
+.badge.green { background: var(--jade-light); color: var(--jade); border-color: oklch(80% 0.1 168); }
+.badge.amber { background: var(--amber-light); color: var(--amber); border-color: oklch(85% 0.1 60); }
+.install-box {
+  display: inline-flex; align-items: center; gap: 16px;
+  background: var(--code-bg); color: var(--code-text);
+  font-family: 'DM Mono', monospace; font-size: 13.5px;
+  padding: 14px 22px; border-radius: var(--radius);
+  border: 1px solid oklch(25% 0.015 250);
+  cursor: pointer; transition: border-color 0.2s;
+  position: relative;
+}
+.install-box:hover { border-color: var(--jade-mid); }
+.install-box .prompt { color: var(--jade-mid); }
+.copy-btn {
+  font-size: 11px; color: var(--text-soft);
+  background: oklch(22% 0.015 250); border: 1px solid oklch(30% 0.015 250);
+  padding: 3px 10px; border-radius: 4px; cursor: pointer;
+  transition: all 0.2s; font-family: 'DM Mono', monospace;
+}
+.copy-btn:hover { background: var(--jade); color: white; border-color: var(--jade); }
+
+/* ── SECTION LAYOUT ── */
+section { padding: 80px 40px; }
+.container { max-width: 1060px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--jade); margin-bottom: 12px;
+}
+h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.15; letter-spacing: -0.02em;
+  color: var(--text); margin-bottom: 16px;
+}
+h2 em { font-style: italic; color: var(--jade); }
+.section-body {
+  font-size: 16px; color: var(--text-mid);
+  max-width: 620px; line-height: 1.75;
+}
+.rule { height: 1px; background: var(--rule); margin: 0 40px; }
+
+/* ── GAP SECTION ── */
+.gap-section { background: var(--bg); }
+.gap-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 48px; align-items: start; margin-top: 52px;
+}
+.gap-problem {
+  padding: 28px 32px;
+  border: 1px solid oklch(80% 0.05 10);
+  background: oklch(98% 0.01 20);
+  border-radius: var(--radius);
+}
+.gap-solution {
+  padding: 28px 32px;
+  border: 1px solid oklch(80% 0.08 168);
+  background: var(--jade-light);
+  border-radius: var(--radius);
+}
+.gap-tag {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 14px; font-weight: 500;
+}
+.gap-problem .gap-tag { color: oklch(50% 0.15 20); }
+.gap-solution .gap-tag { color: var(--jade); }
+.gap-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.gap-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14.5px; color: var(--text-mid); line-height: 1.5;
+}
+.gap-list li::before {
+  content: ''; flex-shrink: 0;
+  width: 18px; height: 18px; border-radius: 50%;
+  margin-top: 2px;
+}
+.gap-problem .gap-list li::before { background: oklch(70% 0.12 20); }
+.gap-solution .gap-list li::before { background: var(--jade); }
+
+/* ── PIPELINE DIAGRAM ── */
+.pipeline-section { background: var(--bg2); }
+.pipeline-flow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px; margin-top: 52px;
+}
+.pipe-step {
+  display: flex; flex-direction: column; align-items: center;
+  background: white;
+  border: 1.5px solid var(--rule);
+  border-radius: 14px;
+  padding: 28px 16px 22px;
+  position: relative;
+  opacity: 0; transform: translateY(16px);
+  animation: fadeUp 0.5s ease forwards;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  cursor: default;
+}
+.pipe-step:hover {
+  border-color: var(--jade-mid);
+  box-shadow: 0 8px 28px oklch(46% 0.17 270 / 0.12);
+  transform: translateY(-3px);
+}
+.pipe-step:nth-child(1) { animation-delay: 0.05s; }
+.pipe-step:nth-child(2) { animation-delay: 0.12s; }
+.pipe-step:nth-child(3) { animation-delay: 0.19s; }
+.pipe-step:nth-child(4) { animation-delay: 0.26s; }
+.pipe-step:nth-child(5) { animation-delay: 0.33s; }
+.pipe-step:nth-child(6) { animation-delay: 0.40s; }
+@keyframes fadeUp {
+  to { opacity:1; transform:translateY(0); }
+}
+.pipe-step:hover { transform: translateY(-3px); }
+.pipe-arrow { display: none; }
+.pipe-step-num {
+  position: absolute; top: 12px; left: 14px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--text-soft); font-weight: 500;
+}
+.pipe-connector {
+  position: absolute; right: -7px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 2px; background: var(--rule);
+  z-index: 2;
+}
+.pipe-connector::after {
+  content: '';
+  position: absolute; right: -4px; top: -4px;
+  border-left: 6px solid var(--rule);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.pipe-icon {
+  width: 64px; height: 64px; border-radius: 16px;
+  background: var(--jade-light);
+  border: 1.5px solid oklch(82% 0.08 270);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin-bottom: 14px;
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 0.05);
+}
+.pipe-name {
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  text-align: center; margin-bottom: 8px; line-height: 1.3;
+}
+.pipe-tool {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--text-soft); text-align: center; line-height: 1.6;
+}
+.pipe-secondary { color: var(--jade); font-weight: 500; }
+
+/* ── FEATURES ── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 52px;
+}
+.feature-card {
+  padding: 28px; border: 1px solid var(--rule);
+  border-radius: var(--radius); background: white;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.feature-card:hover {
+  border-color: var(--jade-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px oklch(46% 0.17 168 / 0.08);
+}
+.feat-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--jade-light); display: flex; align-items: center;
+  justify-content: center; font-size: 18px; margin-bottom: 16px;
+}
+.feat-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.feat-desc { font-size: 13.5px; color: var(--text-mid); line-height: 1.6; }
+.feat-tag {
+  display: inline-block; margin-top: 12px;
+  font-family: 'DM Mono', monospace; font-size: 10.5px;
+  color: var(--jade); background: var(--jade-light);
+  padding: 3px 10px; border-radius: 4px;
+}
+
+/* ── MOCK RESULTS ── */
+.results-section { background: var(--bg); }
+.results-tabs {
+  display: flex; gap: 0; margin-top: 40px;
+  border-bottom: 1px solid var(--rule);
+}
+.tab-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
+  padding: 10px 22px; border: none; background: none;
+  color: var(--text-soft); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.tab-btn.active { color: var(--jade); border-bottom-color: var(--jade); }
+.tab-btn:hover:not(.active) { color: var(--text-mid); }
+.tab-panel { display: none; padding: 32px 0; }
+.tab-panel.active { display: block; }
+
+/* QC metrics */
+.qc-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.qc-card {
+  background: white; border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 20px 18px;
+  text-align: center;
+}
+.qc-value { font-family: 'Instrument Serif', serif; font-size: 32px; color: var(--jade); }
+.qc-label { font-size: 12px; color: var(--text-soft); margin-top: 4px; }
+.mini-bar-row {
+  background: white; border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.bar-item { display: flex; align-items: center; gap: 14px; }
+.bar-label { font-size: 13px; color: var(--text-mid); width: 120px; flex-shrink: 0; }
+.bar-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.bar-fill {
+  height: 100%; border-radius: 4px; background: var(--jade);
+  animation: growBar 1s ease forwards;
+  transform-origin: left; transform: scaleX(0);
+}
+@keyframes growBar { to { transform: scaleX(1); } }
+.bar-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-mid); width: 50px; text-align: right; }
+
+/* AMR table */
+.data-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13.5px; background: white;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  overflow: hidden;
+}
+.data-table thead { background: var(--bg2); }
+.data-table th {
+  padding: 12px 16px; text-align: left;
+  font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-soft); font-weight: 600; border-bottom: 1px solid var(--rule);
+}
+.data-table td {
+  padding: 11px 16px; border-bottom: 1px solid var(--rule);
+  color: var(--text-mid);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg); }
+.pill {
+  display: inline-block; font-family: 'DM Mono', monospace;
+  font-size: 11px; padding: 2px 8px; border-radius: 4px;
+}
+.pill.R { background: oklch(94% 0.06 20); color: oklch(42% 0.16 20); }
+.pill.S { background: var(--jade-light); color: var(--jade); }
+.pill.I { background: var(--amber-light); color: var(--amber); }
+
+/* MLST */
+.mlst-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.mlst-card {
+  background: white; border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 20px 22px;
+}
+.mlst-species { font-size: 13px; color: var(--text-soft); margin-bottom: 6px; font-style: italic; }
+.mlst-st { font-family: 'Instrument Serif', serif; font-size: 28px; color: var(--jade); margin-bottom: 10px; }
+.mlst-alleles {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.allele {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  background: var(--bg2); color: var(--text-mid);
+  padding: 3px 8px; border-radius: 4px;
+}
+
+/* Phylo viz */
+.phylo-box {
+  background: white; border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 32px;
+  display: flex; align-items: center; justify-content: center;
+}
+.phylo-tree { width: 100%; max-width: 600px; }
+
+/* ── USAGE ── */
+.usage-section { background: var(--bg2); }
+.code-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.code-tab {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 6px 14px; border-radius: 4px; border: 1px solid var(--rule);
+  background: white; color: var(--text-mid); cursor: pointer;
+  transition: all 0.2s;
+}
+.code-tab.active { background: var(--jade); color: white; border-color: var(--jade); }
+.code-block {
+  background: var(--code-bg); color: var(--code-text);
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 28px 30px; border-radius: var(--radius);
+  overflow-x: auto; line-height: 1.75;
+  border: 1px solid oklch(22% 0.015 250);
+  display: none;
+}
+.code-block.active { display: block; }
+.c-comment { color: oklch(55% 0.05 250); }
+.c-key { color: oklch(72% 0.14 168); }
+.c-val { color: oklch(75% 0.12 55); }
+.c-cmd { color: oklch(75% 0.15 280); }
+
+/* ── ABOUT ── */
+.about-section { background: var(--bg); }
+.about-inner {
+  display: grid; grid-template-columns: 1fr 340px;
+  gap: 64px; align-items: start;
+}
+.skill-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.chip {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 5px 12px; border-radius: 4px;
+  background: var(--bg2); border: 1px solid var(--rule);
+  color: var(--text-mid);
+}
+.stat-panel {
+  background: white; border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 28px;
+}
+.stat-row {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--rule);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-num {
+  font-family: 'Instrument Serif', serif; font-size: 28px;
+  color: var(--jade); min-width: 60px;
+}
+.stat-desc { font-size: 13px; color: var(--text-mid); }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--rule); padding: 32px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-left {
+  font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--text-soft);
+}
+.footer-links { display: flex; gap: 20px; }
+.footer-links a {
+  font-size: 13px; color: var(--text-soft); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--jade); }
+
+/* ── TWEAKS PANEL ── */
+#tweaks-panel {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: white; border: 1px solid var(--rule);
+  border-radius: 10px; padding: 20px;
+  box-shadow: 0 8px 32px oklch(0% 0 0 / 0.12);
+  width: 240px; display: none; font-size: 13px;
+}
+#tweaks-panel h4 {
+  font-size: 13px; font-weight: 600; margin-bottom: 14px;
+  color: var(--text); border-bottom: 1px solid var(--rule); padding-bottom: 10px;
+}
+.tweak-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.tweak-label { color: var(--text-mid); font-size: 12.5px; }
+.tweak-swatch {
+  width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.2s;
+}
+.tweak-swatch.sel { border-color: var(--jade); }
+.swatch-row { display: flex; gap: 6px; }
+input[type=range] { width: 100%; accent-color: var(--jade); }
+
+@media (max-width: 768px) {
+  .gap-grid, .features-grid, .about-inner { grid-template-columns: 1fr; }
+  .pipeline-flow { flex-direction: column; }
+  .qc-metrics { grid-template-columns: repeat(2, 1fr); }
+  .mlst-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">BacTrack<span>-NF</span></div>
+  <ul class="nav-links">
+    <li><a href="#gap">The Gap</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+  <a href="#" class="nav-cta">View on GitHub →</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">Nextflow DSL2 · Docker Ready · v1.0.0-beta</div>
+  <h1>Clinical Bacterial WGS<br><em>from raw reads to report</em></h1>
+  <p class="hero-sub">A reproducible, containerized Nextflow pipeline for clinical microbiology labs — automating QC, assembly, AMR typing, MLST, and phylogenetic surveillance into a single audit-ready HTML report.</p>
+  <div class="badge-row">
+    <span class="badge green">nextflow ≥23.10</span>
+    <span class="badge green">DSL2</span>
+    <span class="badge">Docker</span>
+    <span class="badge">Singularity</span>
+    <span class="badge amber">MIT License</span>
+    <span class="badge">CI: passing</span>
+  </div>
+  <div class="install-box" onclick="copyInstall(this)">
+    <span class="prompt">$</span>
+    <span id="install-cmd">nextflow run your-github/BacTrack-NF -profile docker</span>
+    <button class="copy-btn" id="copy-lbl">copy</button>
+  </div>
+</div>
+<div class="rule"></div>
+
+<!-- THE GAP -->
+<section class="gap-section" id="gap">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2>Clinical labs need a pipeline<br>that <em>actually fits their workflow</em></h2>
+    <p class="section-body">Whole-genome sequencing is now standard in clinical microbiology. But the bioinformatics tooling hasn't kept up — labs stitch together ad-hoc scripts that break, can't be audited, and aren't reproducible between runs.</p>
+    <div class="gap-grid">
+      <div class="gap-problem">
+        <div class="gap-tag">Current Pain Points</div>
+        <ul class="gap-list">
+          <li>Existing tools (Bactopia, Nullarbor) are research-focused, not clinical-grade</li>
+          <li>No single pipeline covers QC → assembly → AMR → MLST → phylogeny end-to-end</li>
+          <li>Outputs aren't audit-ready — no structured HTML report for clinical record-keeping</li>
+          <li>Hard to deploy in air-gapped hospital HPC environments</li>
+          <li>No built-in outbreak detection or cluster alert thresholds</li>
+        </ul>
+      </div>
+      <div class="gap-solution">
+        <div class="gap-tag">BacTrack-NF solves this</div>
+        <ul class="gap-list">
+          <li>Full DSL2 Nextflow pipeline with modular, testable processes</li>
+          <li>Six integrated modules: QC → Assembly → Annotation → AMR → MLST → Phylogeny</li>
+          <li>Structured HTML + JSON report suitable for clinical audit trails</li>
+          <li>Singularity support for air-gapped HPC; all containers pre-pulled and versioned</li>
+          <li>SNP-distance outbreak alerting with configurable cluster thresholds</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="rule"></div>
+
+<!-- PIPELINE -->
+<section class="pipeline-section" id="pipeline">
+  <div class="container">
+    <div class="section-label">Architecture</div>
+    <h2>Six modules, one <em>command</em></h2>
+    <p class="section-body">Each module is a self-contained Nextflow process with its own Docker container, test data, and documentation. Mix and match with <code style="font-family:'DM Mono';font-size:14px;color:var(--jade)">--skip_*</code> flags.</p>
+    <div class="pipeline-flow">
+      <div class="pipe-step">
+        <span class="pipe-step-num">01</span>
+        <div class="pipe-connector"></div>
+        <div class="pipe-icon">📥</div>
+        <div class="pipe-name">Input QC</div>
+        <div class="pipe-tool">FastQC</div>
+        <div class="pipe-tool pipe-secondary">fastp</div>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-step-num">02</span>
+        <div class="pipe-connector"></div>
+        <div class="pipe-icon">🧩</div>
+        <div class="pipe-name">Assembly</div>
+        <div class="pipe-tool">Shovill</div>
+        <div class="pipe-tool pipe-secondary">SPAdes</div>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-step-num">03</span>
+        <div class="pipe-connector"></div>
+        <div class="pipe-icon">🔬</div>
+        <div class="pipe-name">Annotation</div>
+        <div class="pipe-tool">Prokka</div>
+        <div class="pipe-tool pipe-secondary">QUAST</div>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-step-num">04</span>
+        <div class="pipe-connector"></div>
+        <div class="pipe-icon">💊</div>
+        <div class="pipe-name">AMR Detection</div>
+        <div class="pipe-tool">AMRFinder+</div>
+        <div class="pipe-tool pipe-secondary">RESFinder</div>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-step-num">05</span>
+        <div class="pipe-connector"></div>
+        <div class="pipe-icon">🧬</div>
+        <div class="pipe-name">MLST Typing</div>
+        <div class="pipe-tool">mlst</div>
+        <div class="pipe-tool pipe-secondary">Kleborate</div>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-step-num">06</span>
+        <div class="pipe-icon">🌳</div>
+        <div class="pipe-name">Phylogeny</div>
+        <div class="pipe-tool">Snippy</div>
+        <div class="pipe-tool pipe-secondary">FastTree2</div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="rule"></div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Key Features</div>
+    <h2>Built for <em>clinical reproducibility</em></h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feat-icon">📋</div>
+        <div class="feat-title">Audit-Ready HTML Reports</div>
+        <div class="feat-desc">Every run produces a structured, timestamped HTML + JSON report with QC flags, AMR profiles, and chain-of-custody metadata for clinical records.</div>
+        <span class="feat-tag">report.html · report.json</span>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🚨</div>
+        <div class="feat-title">Outbreak Cluster Alerting</div>
+        <div class="feat-desc">SNP-distance matrix with configurable threshold alerts. Isolates within N SNPs of a reference are flagged automatically — critical for infection control.</div>
+        <span class="feat-tag">--snp_threshold 10</span>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🐳</div>
+        <div class="feat-title">Air-Gap & HPC Ready</div>
+        <div class="feat-desc">All containers are versioned and can be pre-pulled. Singularity profile included for hospital HPCs with no internet access. Zero dependency hell.</div>
+        <span class="feat-tag">-profile singularity</span>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🧪</div>
+        <div class="feat-title">CI-Tested with nf-test</div>
+        <div class="feat-desc">Each module ships with nf-test unit tests run on every commit. Snapshot testing ensures outputs remain consistent across tool version updates.</div>
+        <span class="feat-tag">nf-test · GitHub Actions</span>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">⚙️</div>
+        <div class="feat-title">Flexible Config Profiles</div>
+        <div class="feat-desc">Pre-built profiles for local laptop, Slurm HPC, AWS Batch, and Google Cloud. Switch with a single flag — no config file editing required.</div>
+        <span class="feat-tag">-profile slurm,docker</span>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">MultiQC Integration</div>
+        <div class="feat-desc">Aggregate QC across all samples in a run. Instantly flag low-coverage, contaminated, or failed samples before downstream analysis wastes compute time.</div>
+        <span class="feat-tag">multiqc · coverage · N50</span>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="rule"></div>
+
+<!-- MOCK RESULTS -->
+<section class="results-section" id="results">
+  <div class="container">
+    <div class="section-label">Example Output</div>
+    <h2>Mock results from 12 <em>K. pneumoniae</em> isolates</h2>
+    <p class="section-body">Simulated run on clinical-grade Illumina reads (2×150bp, ~100× coverage). All outputs generated by the pipeline with no manual intervention.</p>
+
+    <div class="results-tabs">
+      <button class="tab-btn active" onclick="switchTab('qc')">QC Metrics</button>
+      <button class="tab-btn" onclick="switchTab('amr')">AMR Profile</button>
+      <button class="tab-btn" onclick="switchTab('mlst')">MLST Typing</button>
+      <button class="tab-btn" onclick="switchTab('phylo')">Phylogeny</button>
+    </div>
+
+    <!-- QC TAB -->
+    <div class="tab-panel active" id="tab-qc">
+      <div class="qc-metrics">
+        <div class="qc-card"><div class="qc-value">12/12</div><div class="qc-label">Samples passed QC</div></div>
+        <div class="qc-card"><div class="qc-value">5.4 Mb</div><div class="qc-label">Mean assembly size</div></div>
+        <div class="qc-card"><div class="qc-value">98.2×</div><div class="qc-label">Mean coverage depth</div></div>
+        <div class="qc-card"><div class="qc-value">127 kb</div><div class="qc-label">Mean N50</div></div>
+      </div>
+      <div class="mini-bar-row">
+        <div class="bar-item">
+          <span class="bar-label">Mean Q30 Score</span>
+          <div class="bar-track"><div class="bar-fill" style="width:94%;animation-delay:0.1s"></div></div>
+          <span class="bar-val">94.1%</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">Adapter trimmed</span>
+          <div class="bar-track"><div class="bar-fill" style="width:8%;animation-delay:0.2s;background:var(--amber)"></div></div>
+          <span class="bar-val">8.2%</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">Mapping rate</span>
+          <div class="bar-track"><div class="bar-fill" style="width:99%;animation-delay:0.3s"></div></div>
+          <span class="bar-val">99.3%</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">Contigs < 500 bp</span>
+          <div class="bar-track"><div class="bar-fill" style="width:4%;animation-delay:0.4s;background:var(--amber)"></div></div>
+          <span class="bar-val">3.8%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AMR TAB -->
+    <div class="tab-panel" id="tab-amr">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Sample ID</th>
+            <th>Gene</th>
+            <th>Drug Class</th>
+            <th>% Identity</th>
+            <th>Coverage</th>
+            <th>Phenotype</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>KP-001</td><td>blaCTX-M-15</td><td>Beta-lactam (ESBL)</td><td>99.8%</td><td>100%</td><td><span class="pill R">R</span></td></tr>
+          <tr><td>KP-001</td><td>aac(6')-Ib-cr</td><td>Aminoglycoside</td><td>98.2%</td><td>100%</td><td><span class="pill R">R</span></td></tr>
+          <tr><td>KP-003</td><td>oqxAB</td><td>Fluoroquinolone</td><td>97.5%</td><td>98%</td><td><span class="pill I">I</span></td></tr>
+          <tr><td>KP-005</td><td>blaTEM-1B</td><td>Beta-lactam</td><td>100%</td><td>100%</td><td><span class="pill R">R</span></td></tr>
+          <tr><td>KP-007</td><td>mcr-1.1</td><td>Colistin</td><td>99.1%</td><td>99%</td><td><span class="pill R">R</span></td></tr>
+          <tr><td>KP-009</td><td>— (no AMR genes)</td><td>—</td><td>—</td><td>—</td><td><span class="pill S">S</span></td></tr>
+          <tr><td>KP-011</td><td>blaKPC-2</td><td>Carbapenem</td><td>100%</td><td>100%</td><td><span class="pill R">R</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MLST TAB -->
+    <div class="tab-panel" id="tab-mlst">
+      <div class="mlst-grid">
+        <div class="mlst-card">
+          <div class="mlst-species">Klebsiella pneumoniae</div>
+          <div class="mlst-st">ST258</div>
+          <div class="mlst-alleles">
+            <span class="allele">gapA:2</span><span class="allele">infB:1</span><span class="allele">mdh:1</span>
+            <span class="allele">pgi:1</span><span class="allele">phoE:9</span><span class="allele">rpoB:4</span><span class="allele">tonB:12</span>
+          </div>
+        </div>
+        <div class="mlst-card">
+          <div class="mlst-species">Klebsiella pneumoniae</div>
+          <div class="mlst-st">ST307</div>
+          <div class="mlst-alleles">
+            <span class="allele">gapA:2</span><span class="allele">infB:1</span><span class="allele">mdh:1</span>
+            <span class="allele">pgi:1</span><span class="allele">phoE:1</span><span class="allele">rpoB:1</span><span class="allele">tonB:70</span>
+          </div>
+        </div>
+        <div class="mlst-card">
+          <div class="mlst-species">Klebsiella pneumoniae</div>
+          <div class="mlst-st">ST147</div>
+          <div class="mlst-alleles">
+            <span class="allele">gapA:3</span><span class="allele">infB:3</span><span class="allele">mdh:1</span>
+            <span class="allele">pgi:1</span><span class="allele">phoE:8</span><span class="allele">rpoB:4</span><span class="allele">tonB:4</span>
+          </div>
+        </div>
+        <div class="mlst-card">
+          <div class="mlst-species">Klebsiella pneumoniae</div>
+          <div class="mlst-st">ST11</div>
+          <div class="mlst-alleles">
+            <span class="allele">gapA:2</span><span class="allele">infB:2</span><span class="allele">mdh:2</span>
+            <span class="allele">pgi:2</span><span class="allele">phoE:3</span><span class="allele">rpoB:2</span><span class="allele">tonB:7</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHYLO TAB -->
+    <div class="tab-panel" id="tab-phylo">
+      <div class="phylo-box">
+        <svg class="phylo-tree" viewBox="0 0 600 300" font-family="DM Mono, monospace" font-size="11">
+          <!-- Trunk -->
+          <line x1="60" y1="150" x2="120" y2="150" stroke="var(--jade)" stroke-width="2"/>
+          <!-- Main branches -->
+          <line x1="120" y1="150" x2="120" y2="80" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="120" y1="150" x2="120" y2="220" stroke="var(--jade)" stroke-width="1.5"/>
+          <!-- Upper cluster -->
+          <line x1="120" y1="80" x2="200" y2="80" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="200" y1="80" x2="200" y2="50" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="200" y1="80" x2="200" y2="110" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="200" y1="50" x2="300" y2="50" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="200" y1="110" x2="300" y2="110" stroke="var(--jade)" stroke-width="1.5"/>
+          <!-- Outbreak cluster (highlighted) -->
+          <rect x="285" y="35" width="160" height="90" rx="6" fill="oklch(94% 0.06 168 / 0.4)" stroke="var(--jade-mid)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="295" y="30" fill="var(--jade)" font-size="10">Outbreak cluster (≤8 SNPs)</text>
+          <line x1="300" y1="50" x2="360" y2="38" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="300" y1="50" x2="360" y2="55" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="300" y1="50" x2="360" y2="72" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="300" y1="110" x2="360" y2="100" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="300" y1="110" x2="360" y2="118" stroke="var(--jade)" stroke-width="1.5"/>
+          <!-- Lower branches -->
+          <line x1="120" y1="220" x2="240" y2="220" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="240" y1="220" x2="240" y2="190" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="240" y1="220" x2="240" y2="255" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="240" y1="190" x2="360" y2="190" stroke="var(--jade)" stroke-width="1.5"/>
+          <line x1="240" y1="255" x2="360" y2="255" stroke="var(--jade)" stroke-width="1.5"/>
+          <!-- Leaf dots -->
+          <circle cx="360" cy="38" r="5" fill="oklch(50% 0.17 20)"/>
+          <circle cx="360" cy="55" r="5" fill="oklch(50% 0.17 20)"/>
+          <circle cx="360" cy="72" r="5" fill="oklch(50% 0.17 20)"/>
+          <circle cx="360" cy="100" r="5" fill="var(--jade)"/>
+          <circle cx="360" cy="118" r="5" fill="var(--jade)"/>
+          <circle cx="360" cy="190" r="5" fill="var(--jade)"/>
+          <circle cx="360" cy="255" r="5" fill="var(--jade)"/>
+          <!-- Labels -->
+          <text x="370" y="42" fill="var(--text-mid)">KP-007 (ST258)</text>
+          <text x="370" y="59" fill="var(--text-mid)">KP-011 (ST258)</text>
+          <text x="370" y="76" fill="var(--text-mid)">KP-001 (ST258)</text>
+          <text x="370" y="104" fill="var(--text-mid)">KP-003 (ST307)</text>
+          <text x="370" y="122" fill="var(--text-mid)">KP-005 (ST307)</text>
+          <text x="370" y="194" fill="var(--text-mid)">KP-009 (ST147)</text>
+          <text x="370" y="259" fill="var(--text-mid)">KP-012 (ST11)</text>
+          <!-- Scale bar -->
+          <line x1="60" y1="285" x2="110" y2="285" stroke="var(--text-soft)" stroke-width="1.5"/>
+          <line x1="60" y1="280" x2="60" y2="290" stroke="var(--text-soft)" stroke-width="1.5"/>
+          <line x1="110" y1="280" x2="110" y2="290" stroke="var(--text-soft)" stroke-width="1.5"/>
+          <text x="68" y="298" fill="var(--text-soft)">10 SNPs</text>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</section>
+<div class="rule"></div>
+
+<!-- USAGE -->
+<section class="usage-section" id="usage">
+  <div class="container">
+    <div class="section-label">Getting Started</div>
+    <h2>Up and running in <em>three commands</em></h2>
+    <div class="code-tabs">
+      <button class="code-tab active" onclick="switchCode('basic')">Basic Run</button>
+      <button class="code-tab" onclick="switchCode('config')">nextflow.config</button>
+      <button class="code-tab" onclick="switchCode('slurm')">Slurm HPC</button>
+    </div>
+    <div class="code-block active" id="code-basic">
+<span class="c-comment"># 1. Install Nextflow (requires Java 17+)</span>
+curl -s https://get.nextflow.io | bash
+
+<span class="c-comment"># 2. Pull and run BacTrack-NF</span>
+nextflow run <span class="c-val">your-github/BacTrack-NF</span> \
+  --input <span class="c-val">samplesheet.csv</span> \
+  --outdir <span class="c-val">./results</span> \
+  --genome <span class="c-val">GCF_000240185.1</span> \
+  --snp_threshold <span class="c-val">10</span> \
+  -profile <span class="c-val">docker</span>
+
+<span class="c-comment"># 3. Open results/report.html in any browser</span>
+open results/report.html
+    </div>
+    <div class="code-block" id="code-config">
+<span class="c-comment">// nextflow.config — customise resources per process</span>
+params {
+  <span class="c-key">input</span>          = <span class="c-val">null</span>
+  <span class="c-key">outdir</span>         = <span class="c-val">"results"</span>
+  <span class="c-key">genome</span>         = <span class="c-val">null</span>
+  <span class="c-key">snp_threshold</span>  = <span class="c-val">20</span>
+  <span class="c-key">min_coverage</span>   = <span class="c-val">30</span>
+  <span class="c-key">skip_annotation</span>= <span class="c-val">false</span>
+  <span class="c-key">skip_phylogeny</span> = <span class="c-val">false</span>
+}
+
+process {
+  withName: 'SHOVILL' {
+    cpus   = <span class="c-val">8</span>
+    memory = <span class="c-val">'32.GB'</span>
+    time   = <span class="c-val">'2.h'</span>
+  }
+  withName: 'FASTTREE' {
+    cpus   = <span class="c-val">16</span>
+    memory = <span class="c-val">'16.GB'</span>
+  }
+}
+    </div>
+    <div class="code-block" id="code-slurm">
+<span class="c-comment"># Submit to SLURM cluster with Singularity</span>
+nextflow run <span class="c-val">your-github/BacTrack-NF</span> \
+  --input <span class="c-val">samplesheet.csv</span> \
+  --outdir <span class="c-val">/scratch/$USER/bactrack_out</span> \
+  -profile <span class="c-val">slurm,singularity</span> \
+  -resume
+
+<span class="c-comment"># Singularity images are pre-cached at:</span>
+<span class="c-comment"># NXF_SINGULARITY_CACHEDIR=/path/to/cache</span>
+
+<span class="c-comment"># Monitor run</span>
+nextflow log | tail -5
+    </div>
+  </div>
+</section>
+<div class="rule"></div>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="container">
+    <div class="about-inner">
+      <div>
+        <div class="section-label">Developer</div>
+        <h2>PhD researcher in<br><em>clinical metagenomics</em></h2>
+        <p class="section-body" style="margin-top:16px">I build reproducible bioinformatics tools at the intersection of clinical microbiology and computational genomics. BacTrack-NF grew out of frustration with fragmented tooling in a clinical WGS setting — I needed something I could hand to a lab technician with one command.</p>
+        <p class="section-body" style="margin-top:14px">Open to remote bioinformatics positions — analyst, pipeline engineer, or computational researcher roles. Comfortable across the full stack: bash to Python to Nextflow to Docker.</p>
+        <div class="skill-chips">
+          <span class="chip">Python</span>
+          <span class="chip">R / Bioconductor</span>
+          <span class="chip">Bash</span>
+          <span class="chip">Nextflow DSL2</span>
+          <span class="chip">Snakemake</span>
+          <span class="chip">Docker</span>
+          <span class="chip">Singularity</span>
+          <span class="chip">QIIME2</span>
+          <span class="chip">BLAST</span>
+          <span class="chip">scikit-learn</span>
+          <span class="chip">Git / GitHub Actions</span>
+        </div>
+      </div>
+      <div class="stat-panel">
+        <div class="stat-row">
+          <span class="stat-num">6</span>
+          <span class="stat-desc">Pipeline modules, each independently testable</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-num">~18 min</span>
+          <span class="stat-desc">Runtime for 12 samples on 32-core HPC node</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-num">4</span>
+          <span class="stat-desc">Deployment profiles: local, Slurm, AWS, GCP</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-num">100%</span>
+          <span class="stat-desc">Processes containerised — no dependency conflicts</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-num">DSL2</span>
+          <span class="stat-desc">Modern Nextflow with sub-workflows & nf-test</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">BacTrack-NF · MIT License · 2025</div>
+  <div class="footer-links">
+    <a href="#">GitHub</a>
+    <a href="#">Docs</a>
+    <a href="#">Issues</a>
+    <a href="#">LinkedIn</a>
+  </div>
+</footer>
+
+<!-- TWEAKS PANEL -->
+<div id="tweaks-panel">
+  <h4>Tweaks</h4>
+  <div class="tweak-row">
+    <span class="tweak-label">Accent colour</span>
+    <div class="swatch-row">
+      <div class="tweak-swatch sel" style="background:oklch(46% 0.17 168)" onclick="setAccent('oklch(46% 0.17 168)','oklch(92% 0.06 168)','oklch(65% 0.12 168)',this)" title="Jade"></div>
+      <div class="tweak-swatch" style="background:oklch(46% 0.17 270)" onclick="setAccent('oklch(46% 0.17 270)','oklch(93% 0.06 270)','oklch(66% 0.12 270)',this)" title="Indigo"></div>
+      <div class="tweak-swatch" style="background:oklch(46% 0.17 30)" onclick="setAccent('oklch(46% 0.17 30)','oklch(94% 0.06 30)','oklch(66% 0.12 30)',this)" title="Amber"></div>
+      <div class="tweak-swatch" style="background:oklch(46% 0.17 0)" onclick="setAccent('oklch(46% 0.17 0)','oklch(94% 0.06 0)','oklch(66% 0.12 0)',this)" title="Rose"></div>
+    </div>
+  </div>
+  <div class="tweak-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <span class="tweak-label">Background warmth</span>
+    <input type="range" min="200" max="80" step="10" value="230"
+      oninput="setBgHue(this.value)" style="width:100%">
+  </div>
+  <div class="tweak-row">
+    <span class="tweak-label">Dark mode</span>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="dark-toggle" onchange="toggleDark(this.checked)" style="accent-color:var(--jade)">
+      <span style="font-size:12px;color:var(--text-mid)">On</span>
+    </label>
+  </div>
+</div>
+
+<script>
+// Tab switching
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const names = ['qc','amr','mlst','phylo'];
+    b.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-'+name);
+  });
+}
+
+// Code tab switching
+function switchCode(name) {
+  document.querySelectorAll('.code-tab').forEach((b,i) => {
+    const names = ['basic','config','slurm'];
+    b.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.code-block').forEach(p => {
+    p.classList.toggle('active', p.id === 'code-'+name);
+  });
+}
+
+// Copy install command
+function copyInstall(el) {
+  navigator.clipboard?.writeText('nextflow run your-github/BacTrack-NF -profile docker');
+  const btn = document.getElementById('copy-lbl');
+  btn.textContent = 'copied!';
+  setTimeout(() => btn.textContent = 'copy', 1800);
+}
+
+// Tweaks
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode')   document.getElementById('tweaks-panel').style.display = 'block';
+  if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaks-panel').style.display = 'none';
+});
+window.parent.postMessage({type: '__edit_mode_available'}, '*');
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "oklch(46% 0.17 270)",
+  "accentLight": "oklch(93% 0.06 270)",
+  "accentMid": "oklch(66% 0.12 270)",
+  "bgHue": 230,
+  "dark": false
+}/*EDITMODE-END*/;
+
+function applyTweaks(t) {
+  const r = document.documentElement.style;
+  r.setProperty('--jade', t.accent);
+  r.setProperty('--jade-light', t.accentLight);
+  r.setProperty('--jade-mid', t.accentMid);
+  if (t.dark) {
+    r.setProperty('--bg','oklch(12% 0.012 250)');
+    r.setProperty('--bg2','oklch(16% 0.014 250)');
+    r.setProperty('--bg3','oklch(20% 0.015 250)');
+    r.setProperty('--text','oklch(93% 0.008 230)');
+    r.setProperty('--text-mid','oklch(72% 0.010 235)');
+    r.setProperty('--text-soft','oklch(52% 0.010 235)');
+    r.setProperty('--rule','oklch(22% 0.012 250)');
+  } else {
+    r.setProperty('--bg',`oklch(97.5% 0.007 ${t.bgHue})`);
+    r.setProperty('--bg2',`oklch(95% 0.009 ${t.bgHue})`);
+    r.setProperty('--bg3',`oklch(92% 0.012 ${t.bgHue})`);
+    r.setProperty('--text','oklch(13% 0.015 250)');
+    r.setProperty('--text-mid','oklch(38% 0.012 240)');
+    r.setProperty('--text-soft','oklch(58% 0.010 235)');
+    r.setProperty('--rule','oklch(85% 0.008 230)');
+  }
+}
+
+let cur = {...TWEAK_DEFAULTS};
+applyTweaks(cur);
+
+function setAccent(a, al, am, el) {
+  document.querySelectorAll('.tweak-swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+  cur = {...cur, accent: a, accentLight: al, accentMid: am};
+  applyTweaks(cur);
+  window.parent.postMessage({type:'__edit_mode_set_keys', edits:{accent:a, accentLight:al, accentMid:am}}, '*');
+}
+function setBgHue(v) {
+  cur = {...cur, bgHue: +v};
+  applyTweaks(cur);
+  window.parent.postMessage({type:'__edit_mode_set_keys', edits:{bgHue:+v}}, '*');
+}
+function toggleDark(v) {
+  cur = {...cur, dark: v};
+  applyTweaks(cur);
+  window.parent.postMessage({type:'__edit_mode_set_keys', edits:{dark:v}}, '*');
+}
+</script>
+</body>
+</html>
